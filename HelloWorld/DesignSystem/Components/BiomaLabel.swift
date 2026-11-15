@@ -29,7 +29,11 @@ final class BiomaLabel: UILabel {
         case title
         /// Título de sección. 22 pt Semibold, Ink.
         case sectionTitle
-        /// Texto descriptivo o secundario. 14 pt Regular, Olive.
+        /// Encabezado de bloque dentro de una pantalla. 18 pt Bold, Ink.
+        case headline
+        /// Título de una tarjeta o fila. 16 pt Semibold, Ink.
+        case cardTitle
+        /// Texto descriptivo o secundario. 14 pt Regular, gris.
         case body
         /// Texto auxiliar pequeño. 12 pt Regular, Hint.
         case caption
@@ -40,6 +44,8 @@ final class BiomaLabel: UILabel {
             case .tagline:      return BiomaTheme.font(size: 12, weight: .semibold, relativeTo: .caption1)
             case .title:        return BiomaTheme.font(size: 28, weight: .bold, relativeTo: .title1)
             case .sectionTitle: return BiomaTheme.font(size: 22, weight: .semibold, relativeTo: .title2)
+            case .headline:     return BiomaTheme.font(size: 18, weight: .bold, relativeTo: .headline)
+            case .cardTitle:    return BiomaTheme.font(size: 16, weight: .semibold, relativeTo: .headline)
             case .body:         return BiomaTheme.font(size: 14, relativeTo: .subheadline)
             case .caption:      return BiomaTheme.font(size: 12, relativeTo: .caption1)
             }
@@ -47,10 +53,11 @@ final class BiomaLabel: UILabel {
 
         fileprivate var color: UIColor {
             switch self {
-            case .brand:                 return BiomaTheme.forest
-            case .tagline, .body:        return BiomaTheme.olive
-            case .title, .sectionTitle:  return BiomaTheme.ink
-            case .caption:               return BiomaTheme.hint
+            case .brand:                                      return BiomaTheme.forest
+            case .tagline:                                    return BiomaTheme.olive
+            case .body:                                       return BiomaTheme.textSecondary
+            case .title, .sectionTitle, .headline, .cardTitle: return BiomaTheme.ink
+            case .caption:                                    return BiomaTheme.hint
             }
         }
 
@@ -65,8 +72,8 @@ final class BiomaLabel: UILabel {
         /// que el usuario pueda saltar entre secciones con el rotor.
         fileprivate var isHeader: Bool {
             switch self {
-            case .brand, .title, .sectionTitle: return true
-            default:                            return false
+            case .brand, .title, .sectionTitle, .headline: return true
+            default:                                       return false
             }
         }
     }

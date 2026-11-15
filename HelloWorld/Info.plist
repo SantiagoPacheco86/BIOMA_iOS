@@ -7,7 +7,7 @@
 	<key>NSFaceIDUsageDescription</key>
 	<string>BIOMA usa Face ID para que inicies sesión de forma rápida y segura.</string>
 	<key>NSCameraUsageDescription</key>
-	<string>BIOMA usa la cámara para que tomes tu foto de perfil.</string>
+	<string>BIOMA usa la cámara para que tomes tu foto de perfil y fotografíes las especies que quieres identificar.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
@@ -24,6 +24,11 @@
 				</dict>
 			</array>
 		</dict>
+	</dict>
+	<key>UILaunchScreen</key>
+	<dict>
+		<key>UIColorName</key>
+		<string>LaunchBackground</string>
 	</dict>
 </dict>
 </plist>

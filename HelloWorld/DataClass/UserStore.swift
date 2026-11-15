@@ -5,7 +5,7 @@ import Foundation
 // Capa de almacenamiento de usuarios de BIOMA. Los ViewModels interactúan
 // únicamente con su API pública y desconocen dónde se guardan los datos:
 //
-//   • Perfil (usuario, nombre, apellido) → UserDefaults (persistente, sin cifrar)
+//   • Perfil (usuario, nombre, apellido, correo) → UserDefaults (persistente, sin cifrar)
 //   • Contraseña                         → Keychain (persistente, cifrado)
 //   • Usuario de la última sesión        → UserDefaults (persistente, sin cifrar)
 //
@@ -57,7 +57,8 @@ final class UserStore {
         users[key] = User(
             username: newUser.username,
             firstName: newUser.firstName,
-            lastName: newUser.lastName
+            lastName: newUser.lastName,
+            email: newUser.email.trimmingCharacters(in: .whitespaces)
         )
 
         // 4. Si el perfil no puede guardarse, se revierte el paso 2
@@ -99,6 +100,44 @@ final class UserStore {
     /// Registra el usuario que acaba de iniciar sesión correctamente.
     func rememberLogin(username: String) {
         defaults.set(username.lowercased(), forKey: Keys.lastLoggedInUser)
+    }
+
+    /// Perfil del usuario con la sesión activa, o `nil` si no hay sesión.
+    var currentUser: User? {
+        guard let username = lastLoggedInUsername else { return nil }
+        return loadUsers()[username]
+    }
+
+    /// Cierra la sesión actual. La cuenta, sus detecciones y su foto se conservan;
+    /// para volver a entrar se necesitan usuario y contraseña.
+    func logout() {
+        defaults.removeObject(forKey: Keys.lastLoggedInUser)
+    }
+
+    // MARK: - Profile Editing
+
+    /// Actualiza nombre, apellidos y correo del usuario con la sesión activa.
+    /// - Returns: `false` si no hay sesión o no fue posible guardar.
+    @discardableResult
+    func updateCurrentUser(firstName: String? = nil, lastName: String? = nil, email: String? = nil) -> Bool {
+        guard let key = lastLoggedInUsername else { return false }
+        var users = loadUsers()
+        guard var user = users[key] else { return false }
+
+        if let firstName { user.firstName = firstName.trimmingCharacters(in: .whitespaces) }
+        if let lastName { user.lastName = lastName.trimmingCharacters(in: .whitespaces) }
+        if let email { user.email = email.trimmingCharacters(in: .whitespaces) }
+
+        users[key] = user
+        return saveUsers(users)
+    }
+
+    /// Reemplaza la contraseña del usuario con la sesión activa en el Keychain.
+    /// - Returns: `false` si no hay sesión o no fue posible guardar.
+    @discardableResult
+    func changePassword(to newPassword: String) -> Bool {
+        guard let key = lastLoggedInUsername else { return false }
+        return keychain.savePassword(newPassword, for: key)
     }
 
     // MARK: - UserDefaults Helpers
