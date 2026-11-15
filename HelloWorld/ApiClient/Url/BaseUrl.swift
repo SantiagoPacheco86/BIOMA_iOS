@@ -5,25 +5,21 @@
 //  Created by José De Jesús Vega López on 01/11/24.
 //
 
-// ⚠️ TEMPORAL: ejemplo de clase con PokeAPI.
-// Este archivo se adaptará a la API definitiva de BIOMA.
-
 import Foundation
 
+// MARK: - BaseUrl
+//
+// Dirección base de la API de iNaturalist (versión 1).
+// Documentación: https://api.inaturalist.org/v1/docs/
 struct BaseUrl {
+
     static func getBaseUrl() -> String {
-        do {
-            // get from x configuration file for configure enviroments [dev|pro|qa]
-            let url: String = "https://pokeapi.co/api/v2/"
-            return url
-        }
-        catch {
-            fatalError("review configuration variables")
-        }
+        "https://api.inaturalist.org/v1/"
     }
-    
+
+    /// Dirección completa de un endpoint, por ejemplo
+    /// https://api.inaturalist.org/v1/taxa/167666
     static func getUrl(with endpoint: Endpoint) -> String {
-        let url = self.getBaseUrl()
-        return url + endpoint.rawValue
+        getBaseUrl() + endpoint.path
     }
 }

@@ -7,3 +7,6 @@ xcuserdata/
 DerivedData/
 build/
 *.xcuserstate
+
+# Configuración privada de la API (token de iNaturalist). Ver Secrets.example.plist
+HelloWorld/Secrets.plist

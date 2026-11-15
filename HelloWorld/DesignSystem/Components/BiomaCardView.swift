@@ -246,6 +246,11 @@ final class BiomaPill: UIView {
 
     required init?(coder: NSCoder) { fatalError("Use init(_:icon:fontSize:background:)") }
 
+    /// Cambia el icono de una píldora creada con icono.
+    func setIcon(_ name: String) {
+        iconView.image = UIImage(systemName: name)
+    }
+
     override func layoutSubviews() {
         super.layoutSubviews()
         layer.cornerRadius = bounds.height / 2

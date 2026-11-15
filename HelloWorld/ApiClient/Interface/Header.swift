@@ -7,7 +7,12 @@
 
 import Foundation
 
+// MARK: - Header
+//
+// Encabezados de autenticación de una petición.
 enum Header {
+    /// Petición pública, sin credenciales.
     case noHeader
+    /// Envía el token de iNaturalist en el encabezado `Authorization`.
     case Authorization
 }

@@ -7,26 +7,35 @@
 
 import Foundation
 
+// MARK: - NetworkingError
+//
+// Errores de red traducidos a mensajes comprensibles para el usuario.
 enum NetworkingError: Error {
     case customError(msg: String)
     case generalError
     case invalidURL
     case timeOut
     case connectionLost
+    case noConnection
     case httpResponseError
+    case unauthorized
     case serverError
+    case decodingError
 }
 
 extension NetworkingError: LocalizedError {
     var errorDescription: String? {
         switch self {
-        case .customError(let msg): return NSLocalizedString(msg, comment: "")
-        case .generalError: return NSLocalizedString("API Error: General Error", comment: "")
-        case .invalidURL: return NSLocalizedString("API Error: URL is invalid", comment: "")
-        case .timeOut: return NSLocalizedString("This request has timed out.", comment: "")
-        case .connectionLost: return NSLocalizedString("Se perdió la conexión de red", comment: "")
-        case .httpResponseError: return NSLocalizedString("Api Error: httpResponseError", comment: "")
-        case .serverError: return NSLocalizedString("Api Error: Server Error", comment: "")
+        case .customError(let msg): return msg
+        case .generalError:         return "Ocurrió un error al consultar el servicio."
+        case .invalidURL:           return "La dirección del servicio no es válida."
+        case .timeOut:              return "El servicio tardó demasiado en responder."
+        case .connectionLost:       return "Se perdió la conexión de red."
+        case .noConnection:         return "No hay conexión a internet."
+        case .httpResponseError:    return "El servicio respondió de forma inesperada."
+        case .unauthorized:         return "El token de iNaturalist no es válido o ya caducó."
+        case .serverError:          return "El servicio no está disponible en este momento."
+        case .decodingError:        return "No se pudo interpretar la respuesta del servicio."
         }
     }
 }
