@@ -79,6 +79,10 @@ final class BiomaListRow: UIControl {
         super.init(frame: .zero)
         translatesAutoresizingMaskIntoConstraints = false
         accessibilityTraits = .button
+        isAccessibilityElement = true
+        // El resaltado al tocar respeta las esquinas redondeadas de la tarjeta.
+        layer.cornerRadius = BiomaTheme.Layout.cardCornerRadius
+        layer.cornerCurve = .continuous
 
         iconView.image = UIImage(systemName: icon)
         iconView.tintColor = BiomaTheme.deepForest

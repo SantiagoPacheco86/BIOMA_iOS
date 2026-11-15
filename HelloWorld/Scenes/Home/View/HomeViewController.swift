@@ -9,10 +9,15 @@ import UIKit
 
 // MARK: - HomeViewController
 //
-// Pantalla principal después del login. Es un UITabBarController:
-// cada pestaña es un UINavigationController con su propia pantalla raíz.
-// SceneDelegate la coloca como raíz de la ventana (no se hace push), por
-// eso no existe una barra de navegación externa ni regreso al Login.
+// Contenedor principal después del login: barra de pestañas con Inicio,
+// Cámara y Perfil. Equivale a HomeActivity con su BottomNavigationView.
+//
+// Cada pestaña tiene su propio UINavigationController, de modo que las
+// pantallas secundarias (Explorar, Historial, Mi información, Ayuda) se
+// abren encima de la pestaña con flecha de regreso.
+//
+// SceneDelegate coloca esta pantalla como raíz de la ventana (no se hace push),
+// por eso no es posible regresar al Login con el botón Atrás.
 final class HomeViewController: UITabBarController {
 
     // MARK: - Lifecycle
@@ -25,64 +30,59 @@ final class HomeViewController: UITabBarController {
 
     // MARK: - UI Setup
 
-    /// Aplica la identidad visual de BIOMA al tab bar.
+    /// Barra de pestañas clara con los colores de BIOMA.
     private func setupAppearance() {
         let appearance = UITabBarAppearance()
         appearance.configureWithOpaqueBackground()
-        appearance.backgroundColor = BiomaTheme.background
+        appearance.backgroundColor = BiomaTheme.surface
+        appearance.shadowColor = BiomaTheme.divider
 
         // Misma apariencia en reposo y cuando el contenido llega al borde.
         tabBar.standardAppearance = appearance
         tabBar.scrollEdgeAppearance = appearance
 
-        tabBar.tintColor = BiomaTheme.forest            // Pestaña seleccionada.
+        tabBar.tintColor = BiomaTheme.deepForest         // Pestaña seleccionada.
         tabBar.unselectedItemTintColor = BiomaTheme.hint // Pestañas en reposo.
     }
 
     // MARK: - Tabs
 
-    /// Crea las pestañas y se las entrega al tab bar.
+    /// Crea las tres pestañas en el mismo orden que el menú de Android.
     private func setupTabs() {
-        // List y Profile todavía se construyen desde sus storyboards.
-        let listVC = UIStoryboard(name: "List", bundle: nil)
-            .instantiateViewController(identifier: "ListViewController") { coder in
-                ListViewController(coder: coder)
-            }
-
-        let profileVC = UIStoryboard(name: "Profile", bundle: nil)
-            .instantiateViewController(identifier: "ProfileViewController") { coder in
-                ProfileViewController(coder: coder)
-            }
-
-        let listTab = createNavController(
-            for: listVC,
-            title: "List",
-            image: UIImage(systemName: "list.bullet")
-        )
-        let profileTab = createNavController(
-            for: profileVC,
-            title: "Profile",
-            image: UIImage(systemName: "person.fill")
-        )
-
-        // Sin esta línea el tab bar no tiene contenido y se ve vacío.
-        setViewControllers([listTab, profileTab], animated: false)
+        let tabs = [
+            makeTab(InicioViewController(), title: "Inicio", icon: "house"),
+            makeTab(CameraViewController(), title: "Cámara", icon: "camera"),
+            makeTab(ProfileViewController(), title: "Perfil", icon: "person")
+        ]
+        setViewControllers(tabs, animated: false)
     }
 
     /// Envuelve una pantalla en un UINavigationController y configura su pestaña.
-    private func createNavController(
-        for rootVC: UIViewController,
-        title: String,
-        image: UIImage?
-    ) -> UINavigationController {
-        let navController = UINavigationController(rootViewController: rootVC)
-        navController.tabBarItem.title = title
-        navController.tabBarItem.image = image
-        navController.navigationBar.tintColor = BiomaTheme.forest
+    private func makeTab(_ rootViewController: UIViewController, title: String, icon: String) -> UINavigationController {
+        let navigationController = UINavigationController(rootViewController: rootViewController)
+        navigationController.tabBarItem = UITabBarItem(
+            title: title,
+            image: UIImage(systemName: icon),
+            selectedImage: UIImage(systemName: "\(icon).fill")
+        )
+        Self.applyBiomaStyle(to: navigationController.navigationBar)
+        return navigationController
+    }
 
-        // Título que aparece en la barra de navegación de la pestaña.
-        rootVC.navigationItem.title = title
-        rootVC.view.backgroundColor = BiomaTheme.background
-        return navController
+    /// Barra de navegación del color del fondo, sin línea inferior y con la
+    /// flecha de regreso en verde. Se comparte con el flujo de autenticación.
+    static func applyBiomaStyle(to navigationBar: UINavigationBar, transparent: Bool = false) {
+        let appearance = UINavigationBarAppearance()
+        if transparent {
+            appearance.configureWithTransparentBackground()
+        } else {
+            appearance.configureWithOpaqueBackground()
+            appearance.backgroundColor = BiomaTheme.background
+            appearance.shadowColor = .clear
+        }
+        navigationBar.standardAppearance = appearance
+        navigationBar.scrollEdgeAppearance = appearance
+        navigationBar.compactAppearance = appearance
+        navigationBar.tintColor = BiomaTheme.deepForest
     }
 }

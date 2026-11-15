@@ -33,6 +33,16 @@ struct BiometricAuthService {
             case .opticID: return "Optic ID"
             }
         }
+
+        /// SF Symbol que representa la biometría en los botones.
+        var symbolName: String {
+            switch self {
+            case .none:    return "lock"
+            case .touchID: return "touchid"
+            case .faceID:  return "faceid"
+            case .opticID: return "opticid"
+            }
+        }
     }
 
     // MARK: - Public API

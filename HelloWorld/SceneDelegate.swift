@@ -36,8 +36,8 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
         // MARK: - 3. DEFINIR PANTALLA INICIAL
 
-        // La app siempre comienza en el Login de BIOMA.
-        showLogin(animated: false)
+        // La app comienza con el Splash, que a los 2.5 segundos da paso al Login.
+        showSplash()
 
         // MARK: - 4. MOSTRAR PANTALLA
 
@@ -49,23 +49,37 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     //
     // La app tiene dos "mundos" que no deben mezclarse en una misma pila:
     //
-    //   • Autenticación: UINavigationController → Main ⇄ Register
-    //   • Sesión iniciada: HomeViewController (tab bar con List y Profile)
+    //   • Autenticación: Splash → UINavigationController → Main ⇄ Register
+    //   • Sesión iniciada: HomeViewController (pestañas Inicio, Cámara y Perfil)
     //
     // En lugar de hacer push de Home sobre el Login, reemplazamos la
     // pantalla raíz de la ventana. Así el Login se libera de memoria y el
     // botón Atrás (o el gesto de deslizar) no puede regresar a él.
 
+    /// Muestra la pantalla de bienvenida y, al terminar, el Login.
+    func showSplash() {
+        let splash = SplashViewController { [weak self] in
+            self?.showLogin()
+        }
+        setRootViewController(splash, animated: false)
+    }
+
     /// Muestra el flujo de autenticación (Login → Registro).
-    /// Úsalo al arrancar la app y, más adelante, al cerrar sesión.
+    /// Se usa después del Splash y al cerrar sesión.
     func showLogin(animated: Bool = true) {
         let navigationController = UINavigationController(
             rootViewController: MainViewController()
         )
-        // Color verde característico de BIOMA para la flecha de regreso.
-        navigationController.navigationBar.tintColor = BiomaTheme.forest
+        // Barra transparente: el fondo de montañas se ve también detrás de la flecha.
+        HomeViewController.applyBiomaStyle(to: navigationController.navigationBar, transparent: true)
 
         setRootViewController(navigationController, animated: animated)
+    }
+
+    /// Cierra la sesión actual y regresa al Login.
+    func logout() {
+        UserStore.shared.logout()
+        showLogin()
     }
 
     /// Muestra la pantalla principal después de un login exitoso.

@@ -88,6 +88,41 @@ class BiomaViewController: UIViewController {
         ])
     }
 
+    // MARK: - Layout Helpers
+
+    /// Envuelve una vista para centrarla horizontalmente dentro de `contentStack`,
+    /// que estira a sus elementos a todo el ancho.
+    func centered(_ view: UIView) -> UIView {
+        let wrapper = UIView()
+        view.translatesAutoresizingMaskIntoConstraints = false
+        wrapper.addSubview(view)
+        NSLayoutConstraint.activate([
+            view.topAnchor.constraint(equalTo: wrapper.topAnchor),
+            view.bottomAnchor.constraint(equalTo: wrapper.bottomAnchor),
+            view.centerXAnchor.constraint(equalTo: wrapper.centerXAnchor),
+            view.leadingAnchor.constraint(greaterThanOrEqualTo: wrapper.leadingAnchor),
+            view.trailingAnchor.constraint(lessThanOrEqualTo: wrapper.trailingAnchor)
+        ])
+        return wrapper
+    }
+
+    /// Imagen de fondo de montañas que ocupa toda la pantalla, detrás del contenido.
+    /// Debe llamarse antes de `setupScrollableContent()`.
+    func addMountainBackground() {
+        let background = UIImageView(image: UIImage(named: "BiomaBackground"))
+        background.contentMode = .scaleAspectFill
+        background.clipsToBounds = true
+        background.isAccessibilityElement = false
+        background.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(background)
+        NSLayoutConstraint.activate([
+            background.topAnchor.constraint(equalTo: view.topAnchor),
+            background.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            background.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            background.trailingAnchor.constraint(equalTo: view.trailingAnchor)
+        ])
+    }
+
     // MARK: - Navigation
 
     /// Abre una pantalla encima de la actual dentro de la pestaña.

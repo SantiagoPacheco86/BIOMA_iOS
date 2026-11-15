@@ -6,368 +6,165 @@
 //
 
 import UIKit
-import AVKit
-import AVFoundation
+import Combine
 
 // MARK: - ProfileViewController
 //
-// Pantalla de perfil del usuario.
-//
-// Responsabilidades:
-//   • Mostrar y actualizar la foto de perfil mediante la cámara o la galería.
-//   • Reproducir un video de ayuda y un audio de muestra desde la barra de navegación.
-//
-// La interfaz se construye de forma programática con los componentes del
-// DesignSystem de BIOMA (BiomaButton, BiomaLabel y BiomaTheme).
-final class ProfileViewController: UIViewController {
-
-    // MARK: - Constants
-
-    /// Direcciones de los recursos multimedia de demostración.
-    private enum MediaURL {
-        static let helpVideo = "https://cdn.lephenix.fr/wp-content/uploads/2022/10/07104840/big_buck_bunny_720p_1mb.mp4"
-        static let sampleAudio = "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
-    }
-
-    /// Medidas propias de esta pantalla.
-    private enum Metrics {
-        static let photoSize: CGFloat = 200
-        static let photoCornerRadius: CGFloat = 16
-        static let placeholderIconSize: CGFloat = 56
-        static let topMargin: CGFloat = 32
-    }
+// Pestaña Perfil: foto de perfil, nombre, botones para tomar o seleccionar
+// foto y accesos a «Mi información» y «Ayuda».
+// Equivale a ProfileFragment del proyecto Android.
+final class ProfileViewController: BiomaViewController {
 
     // MARK: - Properties
 
-    /// Reproductor de audio activo. Es `nil` cuando no hay audio en reproducción.
-    private var audioPlayer: AVPlayer?
-    
-    /// Almacenamiento persistente de la foto de perfil.
-    private let photoStore = ProfilePhotoStore()
-
-    /// Usuario de la sesión actual; determina qué foto se carga y se guarda.
-    private var currentUsername: String? {
-        UserStore.shared.lastLoggedInUsername
-    }
+    private let viewModel = ProfileViewModel()
+    private var cancellables = Set<AnyCancellable>()
+    private lazy var imagePicker = ImagePickerHelper(presenter: self)
 
     // MARK: - UI Components
 
-    /// Contenedor de la foto de perfil.
-    private let photoImageView = UIImageView()
-
-    /// Botón primario que abre el menú de selección de imagen.
-    private let addPhotoButton = BiomaButton("Agregar foto")
-
-    /// Texto descriptivo ubicado sobre la foto de perfil.
-    private let subtitleLabel = BiomaLabel(
-        "Agrega una foto para tu perfil de explorador.",
-        style: .body
-    )
-
-    /// Pila vertical que organiza el texto, la foto y el botón.
-    private let contentStack = UIStackView()
+    private let avatarView = BiomaAvatarView(diameter: 150)
+    private let nameLabel = BiomaLabel(style: .title)
+    private let takePhotoButton = BiomaButton("Tomar foto", icon: "camera")
+    private let selectPhotoButton = BiomaButton("Seleccionar foto", icon: "photo.badge.plus")
+    private let myInfoRow = BiomaListRow(icon: "person", title: "Mi información", subtitle: "Nombre de usuario, correo, etc.")
+    private let helpRow = BiomaListRow(icon: "doc.text", title: "Ayuda", subtitle: "Tutoriales y soporte")
 
     // MARK: - Lifecycle
 
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
-        setupConstraints()
         setupActions()
-        setupNavigationItems()
-        loadSavedPhoto()
+        setupBindings()
     }
 
-    override func viewWillDisappear(_ animated: Bool) {
-        super.viewWillDisappear(animated)
-        // El audio se detiene cuando la pantalla deja de estar visible para
-        // evitar que continúe reproduciéndose en segundo plano.
-        stopAudio()
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        viewModel.reload()
     }
 
     // MARK: - UI Setup
 
-    /// Configura la jerarquía de vistas y la apariencia de los componentes.
     private func setupUI() {
-        view.backgroundColor = BiomaTheme.background
+        setupScrollableContent(spacing: 16, topInset: 12)
 
-        // Pila vertical centrada horizontalmente.
-        contentStack.axis = .vertical
-        contentStack.alignment = .center
-        contentStack.spacing = BiomaTheme.Layout.spacing
-        contentStack.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(contentStack)
+        let header = BiomaHeaderView(title: "Perfil")
 
-        // Superficie blanca con esquinas redondeadas y borde discreto.
-        photoImageView.backgroundColor = BiomaTheme.white
-        photoImageView.layer.cornerRadius = Metrics.photoCornerRadius
-        photoImageView.layer.cornerCurve = .continuous
-        photoImageView.layer.borderWidth = 1
-        photoImageView.layer.borderColor = BiomaTheme.hint.withAlphaComponent(0.3).cgColor
-        // Recorta la imagen para respetar las esquinas redondeadas.
-        photoImageView.clipsToBounds = true
-        photoImageView.translatesAutoresizingMaskIntoConstraints = false
-        photoImageView.isAccessibilityElement = true
-        showPlaceholder()
+        nameLabel.textAlignment = .center
+        nameLabel.textColor = BiomaTheme.deepForest
+        nameLabel.font = BiomaTheme.font(size: 30, weight: .bold, relativeTo: .title1)
 
-        subtitleLabel.textAlignment = .center
+        let subtitle = BiomaLabel("Explorador de la naturaleza", style: .body)
+        subtitle.font = BiomaTheme.font(size: 17, relativeTo: .body)
+        subtitle.textAlignment = .center
 
-        [subtitleLabel, photoImageView, addPhotoButton].forEach {
+        // Los dos botones comparten el ancho disponible.
+        let photoButtons = UIStackView(arrangedSubviews: [takePhotoButton, selectPhotoButton])
+        photoButtons.axis = .horizontal
+        photoButtons.spacing = 12
+        photoButtons.distribution = .fillEqually
+        [takePhotoButton, selectPhotoButton].forEach { $0.layer.cornerRadius = 27 }
+
+        let avatarRow = centered(avatarView)
+        let myInfoCard = BiomaCardView(content: myInfoRow)
+        let helpCard = BiomaCardView(content: helpRow)
+        let versionRow = centered(BiomaPill("Bioma v1.0.0", fontSize: 13))
+
+        [header, avatarRow, nameLabel, subtitle, Self.makeLeafDivider(),
+         photoButtons, myInfoCard, helpCard, versionRow].forEach {
             contentStack.addArrangedSubview($0)
         }
-        // Separación adicional entre la foto y el botón.
-        contentStack.setCustomSpacing(BiomaTheme.Layout.sectionSpacing, after: photoImageView)
+        contentStack.setCustomSpacing(28, after: header)
+        contentStack.setCustomSpacing(18, after: avatarRow)
+        contentStack.setCustomSpacing(4, after: nameLabel)
+        contentStack.setCustomSpacing(26, after: photoButtons)
+        contentStack.setCustomSpacing(30, after: helpCard)
     }
 
-    /// Configura los botones de la barra de navegación para el contenido multimedia.
-    private func setupNavigationItems() {
-        let helpButton = UIBarButtonItem(
-            title: "Ayuda",
-            style: .plain,
-            target: self,
-            action: #selector(didTapHelp)
-        )
-        let playButton = UIBarButtonItem(
-            barButtonSystemItem: .play,
-            target: self,
-            action: #selector(didTapPlayAudio)
-        )
-        let pauseButton = UIBarButtonItem(
-            barButtonSystemItem: .pause,
-            target: self,
-            action: #selector(didTapStopAudio)
-        )
+    /// Adorno «—— 🍃 ——» bajo el subtítulo.
+    private static func makeLeafDivider() -> UIView {
+        func line() -> UIView {
+            let view = UIView()
+            view.backgroundColor = BiomaTheme.ink
+            view.translatesAutoresizingMaskIntoConstraints = false
+            NSLayoutConstraint.activate([
+                view.widthAnchor.constraint(equalToConstant: 28),
+                view.heightAnchor.constraint(equalToConstant: 1.5)
+            ])
+            return view
+        }
 
-        // Etiquetas para VoiceOver, ya que los iconos no incluyen texto.
-        playButton.accessibilityLabel = "Reproducir audio"
-        pauseButton.accessibilityLabel = "Detener audio"
+        let leaf = UIImageView(image: UIImage(systemName: "leaf"))
+        leaf.tintColor = BiomaTheme.ink
+        leaf.preferredSymbolConfiguration = UIImage.SymbolConfiguration(pointSize: 13)
 
-        navigationItem.setRightBarButtonItems([helpButton], animated: false)
-        navigationItem.setLeftBarButtonItems([pauseButton, playButton], animated: false)
-    }
+        let stack = UIStackView(arrangedSubviews: [line(), leaf, line()])
+        stack.axis = .horizontal
+        stack.alignment = .center
+        stack.spacing = 12
+        stack.isAccessibilityElement = false
 
-    /// Muestra un icono de marcador mientras no exista una foto de perfil.
-    private func showPlaceholder() {
-        let configuration = UIImage.SymbolConfiguration(
-            pointSize: Metrics.placeholderIconSize,
-            weight: .light
-        )
-        photoImageView.image = UIImage(systemName: "person.crop.square", withConfiguration: configuration)
-        photoImageView.tintColor = BiomaTheme.hint
-        // El icono se muestra centrado y con su tamaño original.
-        photoImageView.contentMode = .center
-        photoImageView.accessibilityLabel = "Sin foto de perfil"
-    }
-
-    /// Muestra la foto seleccionada y actualiza el texto del botón.
-    /// - Parameter photo: Imagen obtenida de la cámara o de la galería.
-    private func showPhoto(_ photo: UIImage) {
-        photoImageView.image = photo
-        // Ocupa todo el contenedor sin deformar la imagen.
-        photoImageView.contentMode = .scaleAspectFill
-        photoImageView.accessibilityLabel = "Foto de perfil"
-        addPhotoButton.setTitle("Cambiar foto", for: .normal)
-    }
-
-    // MARK: - Constraints
-
-    /// Define la posición y el tamaño de los componentes mediante Auto Layout.
-    private func setupConstraints() {
+        let wrapper = UIView()
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        wrapper.addSubview(stack)
         NSLayoutConstraint.activate([
-            // Pila anclada al área segura superior con los márgenes de BIOMA.
-            contentStack.topAnchor.constraint(
-                equalTo: view.safeAreaLayoutGuide.topAnchor,
-                constant: Metrics.topMargin
-            ),
-            contentStack.leadingAnchor.constraint(
-                equalTo: view.leadingAnchor,
-                constant: BiomaTheme.Layout.horizontalMargin
-            ),
-            contentStack.trailingAnchor.constraint(
-                equalTo: view.trailingAnchor,
-                constant: -BiomaTheme.Layout.horizontalMargin
-            ),
-
-            // Contenedor cuadrado para la foto.
-            photoImageView.widthAnchor.constraint(equalToConstant: Metrics.photoSize),
-            photoImageView.heightAnchor.constraint(equalTo: photoImageView.widthAnchor),
-
-            // El botón comparte el ancho de la foto.
-            addPhotoButton.widthAnchor.constraint(equalTo: photoImageView.widthAnchor)
+            stack.topAnchor.constraint(equalTo: wrapper.topAnchor),
+            stack.bottomAnchor.constraint(equalTo: wrapper.bottomAnchor),
+            stack.centerXAnchor.constraint(equalTo: wrapper.centerXAnchor)
         ])
+        return wrapper
     }
 
     // MARK: - Actions
 
-    /// Asocia los eventos de los controles con sus métodos de respuesta.
     private func setupActions() {
-        addPhotoButton.addTarget(self, action: #selector(photoTapped), for: .touchUpInside)
+        takePhotoButton.addTarget(self, action: #selector(takePhotoTapped), for: .touchUpInside)
+        selectPhotoButton.addTarget(self, action: #selector(selectPhotoTapped), for: .touchUpInside)
+        // En Android, el botón de cámara sobre la foto abre la galería.
+        avatarView.badgeButton.addTarget(self, action: #selector(selectPhotoTapped), for: .touchUpInside)
+        myInfoRow.addTarget(self, action: #selector(myInfoTapped), for: .touchUpInside)
+        helpRow.addTarget(self, action: #selector(helpTapped), for: .touchUpInside)
     }
 
-    /// Presenta un menú para elegir el origen de la imagen.
-    @objc private func photoTapped() {
-        // En iPhone se presenta desde la parte inferior; en iOS 26 el sistema
-        // puede mostrarlo con apariencia de alerta.
-        let alert = UIAlertController(
-            title: "Selecciona una imagen",
-            message: nil,
-            preferredStyle: .actionSheet
-        )
-
-        alert.addAction(UIAlertAction(title: "Cámara", style: .default) { [weak self] _ in
-            self?.presentImagePicker(source: .camera)
-        })
-        alert.addAction(UIAlertAction(title: "Galería", style: .default) { [weak self] _ in
-            self?.presentImagePicker(source: .photoLibrary)
-        })
-        alert.addAction(UIAlertAction(title: "Cancelar", style: .cancel))
-
-        // En iPad, un actionSheet requiere un punto de anclaje para presentarse.
-        alert.popoverPresentationController?.sourceView = addPhotoButton
-        alert.popoverPresentationController?.sourceRect = addPhotoButton.bounds
-
-        present(alert, animated: true)
+    @objc private func takePhotoTapped() {
+        imagePicker.pick(from: .camera) { [weak self] in self?.updatePhoto($0) }
     }
 
-    /// Presenta el selector de imágenes del sistema para el origen indicado.
-    /// - Parameter source: `.camera` para tomar una foto o `.photoLibrary` para elegir una existente.
-    private func presentImagePicker(source: UIImagePickerController.SourceType) {
-        // Verifica que el origen esté disponible; el simulador no dispone de cámara.
-        guard UIImagePickerController.isSourceTypeAvailable(source) else {
-            let message = source == .camera
-                ? "La cámara no está disponible en este dispositivo. En el simulador utiliza la Galería."
-                : "No es posible acceder a la galería."
-            showAlert(title: "No disponible", message: message)
-            return
-        }
-
-        let picker = UIImagePickerController()
-        picker.sourceType = source
-        // Permite recortar la imagen en formato cuadrado antes de confirmarla.
-        picker.allowsEditing = true
-        // El controlador recibe la imagen seleccionada o la cancelación.
-        picker.delegate = self
-        present(picker, animated: true)
+    @objc private func selectPhotoTapped() {
+        imagePicker.pick(from: .photoLibrary) { [weak self] in self?.updatePhoto($0) }
     }
 
-    /// Reproduce el video de ayuda en el reproductor del sistema.
-    @objc private func didTapHelp() {
-        guard let url = URL(string: MediaURL.helpVideo) else {
-            print("⚠️ Profile: URL de video no válida")
-            return
-        }
-
-        // Detiene el audio para evitar reproducir dos fuentes simultáneamente.
-        stopAudio()
-
-        let videoPlayer = AVPlayer(url: url)
-        let playerViewController = AVPlayerViewController()
-        playerViewController.player = videoPlayer
-
-        // `present` muestra el reproductor de forma modal sobre la pantalla actual;
-        // se cierra con `dismiss`, a diferencia de `push`, que lo agregaría a la
-        // pila de navegación y se cerraría con `pop`.
-        present(playerViewController, animated: true) {
-            videoPlayer.play()
-        }
+    @objc private func myInfoTapped() {
+        push(InformationViewController())
     }
 
-    /// Inicia la reproducción del audio de muestra.
-    @objc private func didTapPlayAudio() {
-        guard let url = URL(string: MediaURL.sampleAudio) else {
-            print("⚠️ Profile: URL de audio no válida")
-            return
-        }
-
-        do {
-            // Configura la sesión de audio para reproducción, incluso con el
-            // interruptor de silencio activado.
-            let session = AVAudioSession.sharedInstance()
-            try session.setCategory(.playback, mode: .default)
-            try session.setActive(true)
-        } catch {
-            print("⚠️ Profile: no se pudo configurar la sesión de audio: \(error.localizedDescription)")
-            return
-        }
-
-        // Sustituye cualquier reproducción previa por una nueva.
-        stopAudio()
-        let player = AVPlayer(url: url)
-        audioPlayer = player
-        player.play()
+    @objc private func helpTapped() {
+        push(HelpViewController())
     }
 
-    /// Detiene la reproducción del audio de muestra.
-    @objc private func didTapStopAudio() {
-        stopAudio()
-    }
-
-    // MARK: - Helpers
-
-    /// Muestra la foto guardada del usuario actual, si existe.
-    private func loadSavedPhoto() {
-        guard let username = currentUsername,
-              let data = photoStore.load(for: username),
-              let photo = UIImage(data: data) else {
-            return
-        }
-        showPhoto(photo)
-    }
-
-    /// Guarda la foto seleccionada para el usuario actual.
-    private func savePhoto(_ photo: UIImage) {
-        guard let username = currentUsername else { return }
-
+    /// Guarda la foto elegida como foto de perfil.
+    private func updatePhoto(_ image: UIImage) {
         // JPEG con 80 % de calidad: buen balance entre nitidez y tamaño de archivo.
-        guard let data = photo.jpegData(compressionQuality: 0.8),
-              photoStore.save(data, for: username) else {
-            showAlert(
-                title: "No se pudo guardar",
-                message: "La foto se muestra, pero no se guardó en el dispositivo."
-            )
+        guard let data = image.jpegData(compressionQuality: 0.8), viewModel.savePhoto(data) else {
+            showAlert(title: "No se pudo guardar", message: "La foto no se pudo guardar en el dispositivo.")
             return
         }
     }
-    
-    /// Pausa y libera el reproductor de audio, si existe.
-    private func stopAudio() {
-        audioPlayer?.pause()
-        audioPlayer = nil
-    }
 
-    /// Presenta una alerta informativa con un único botón de confirmación.
-    private func showAlert(title: String, message: String) {
-        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "Aceptar", style: .default))
-        present(alert, animated: true)
-    }
-}
+    // MARK: - Bindings
 
-// MARK: - UIImagePickerControllerDelegate, UINavigationControllerDelegate
-//
-// `UIImagePickerController` hereda de `UINavigationController`; por ello su
-// propiedad `delegate` exige la conformidad con ambos protocolos, aunque solo
-// se implementan los métodos de `UIImagePickerControllerDelegate`.
-extension ProfileViewController: UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+    private func setupBindings() {
+        viewModel.$name
+            .receive(on: RunLoop.main)
+            .sink { [weak self] in self?.nameLabel.text = $0 }
+            .store(in: &cancellables)
 
-    /// Recibe la imagen tomada o seleccionada y la muestra en el perfil.
-    func imagePickerController(
-        _ picker: UIImagePickerController,
-        didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]
-    ) {
-        picker.dismiss(animated: true)
-
-        // Se prioriza la versión recortada; si no existe, se utiliza la original.
-        guard let photo = (info[.editedImage] ?? info[.originalImage]) as? UIImage else {
-            print("⚠️ Profile: no se recibió ninguna imagen")
-            return
-        }
-        showPhoto(photo)
-        savePhoto(photo)
-    }
-
-    /// Cierra el selector cuando el usuario cancela la operación.
-    func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
-        picker.dismiss(animated: true)
+        viewModel.$photoData
+            .receive(on: RunLoop.main)
+            .sink { [weak self] data in
+                self?.avatarView.setImage(data.flatMap(UIImage.init(data:)))
+            }
+            .store(in: &cancellables)
     }
 }
