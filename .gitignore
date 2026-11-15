@@ -1,0 +1,9 @@
+# macOS
+.DS_Store
+__MACOSX/
+
+# Xcode: configuración personal y compilaciones
+xcuserdata/
+DerivedData/
+build/
+*.xcuserstate
