@@ -55,13 +55,13 @@ final class MainViewModel {
     /// Biometría disponible para iniciar sesión.
     /// Es `.none` si el dispositivo no la tiene o si nadie ha iniciado sesión antes con contraseña.
     var biometricLoginKind: BiometricAuthService.BiometryKind {
-        guard UserStore.shared.lastLoggedInUsername != nil else { return .none }
+        guard UserStore.shared.biometricUsername != nil else { return .none }
         return biometrics.availableBiometry()
     }
 
     /// Inicia sesión como el último usuario usando la biometría del dispositivo.
     func loginWithBiometrics(completion: @escaping (BiometricLoginResult) -> Void) {
-        guard let username = UserStore.shared.lastLoggedInUsername else {
+        guard let username = UserStore.shared.biometricUsername else {
             completion(.failed(message: "Inicia sesión con tu contraseña al menos una vez para activar este acceso."))
             return
         }
@@ -69,6 +69,8 @@ final class MainViewModel {
         biometrics.authenticate(reason: "Inicia sesión en BIOMA como \(username).") { result in
             switch result {
             case .success:
+                // La biometría confirmó al dueño del dispositivo: se inicia su sesión.
+                UserStore.shared.startBiometricSession()
                 completion(.success)
 
             case .failure(let error):

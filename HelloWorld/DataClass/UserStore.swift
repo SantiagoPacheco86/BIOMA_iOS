@@ -23,6 +23,7 @@ final class UserStore {
     private enum Keys {
         static let users = "bioma.registeredUsers"
         static let lastLoggedInUser = "bioma.lastLoggedInUser"
+        static let biometricUser = "bioma.biometricUser"
     }
 
     private let defaults: UserDefaults
@@ -86,20 +87,40 @@ final class UserStore {
     }
 
     // MARK: - Session
+    //
+    // Se guardan dos datos distintos:
+    //
+    //   • Sesión activa (`lastLoggedInUser`): quién está usando la app ahora.
+    //     Se borra al cerrar sesión.
+    //   • Usuario para biometría (`biometricUser`): el último que inició sesión
+    //     con contraseña. Se conserva al cerrar sesión para que Face ID siga
+    //     disponible en el Login.
 
-    /// Usuario de la última sesión iniciada con contraseña.
-    /// Es `nil` si nunca se ha iniciado sesión o si el usuario ya no existe.
+    /// Usuario con la sesión activa, o `nil` si no hay sesión o el usuario ya no existe.
     var lastLoggedInUsername: String? {
-        guard let username = defaults.string(forKey: Keys.lastLoggedInUser),
-              loadUsers()[username] != nil else {
-            return nil
-        }
-        return username
+        existingUser(forKey: Keys.lastLoggedInUser)
     }
 
-    /// Registra el usuario que acaba de iniciar sesión correctamente.
+    /// Último usuario que inició sesión con contraseña; habilita el acceso biométrico.
+    var biometricUsername: String? {
+        existingUser(forKey: Keys.biometricUser)
+    }
+
+    /// Inicia la sesión de un usuario después de verificar su contraseña.
+    /// También lo recuerda para el acceso biométrico.
     func rememberLogin(username: String) {
-        defaults.set(username.lowercased(), forKey: Keys.lastLoggedInUser)
+        let key = username.lowercased()
+        defaults.set(key, forKey: Keys.lastLoggedInUser)
+        defaults.set(key, forKey: Keys.biometricUser)
+    }
+
+    /// Inicia la sesión del usuario recordado después de verificar su biometría.
+    /// - Returns: `false` si no hay un usuario recordado.
+    @discardableResult
+    func startBiometricSession() -> Bool {
+        guard let username = biometricUsername else { return false }
+        defaults.set(username, forKey: Keys.lastLoggedInUser)
+        return true
     }
 
     /// Perfil del usuario con la sesión activa, o `nil` si no hay sesión.
@@ -108,10 +129,19 @@ final class UserStore {
         return loadUsers()[username]
     }
 
-    /// Cierra la sesión actual. La cuenta, sus detecciones y su foto se conservan;
-    /// para volver a entrar se necesitan usuario y contraseña.
+    /// Cierra la sesión actual. La cuenta, sus detecciones, su foto y el
+    /// acceso biométrico se conservan.
     func logout() {
         defaults.removeObject(forKey: Keys.lastLoggedInUser)
+    }
+
+    /// Lee un nombre de usuario guardado y comprueba que la cuenta siga existiendo.
+    private func existingUser(forKey key: String) -> String? {
+        guard let username = defaults.string(forKey: key),
+              loadUsers()[username] != nil else {
+            return nil
+        }
+        return username
     }
 
     // MARK: - Profile Editing
