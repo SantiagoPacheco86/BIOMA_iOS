@@ -32,6 +32,7 @@ final class InformationViewController: BiomaViewController {
     private let passwordRow = BiomaListRow(icon: "lock", title: "Cambiar contraseña", subtitle: "Actualiza tu contraseña de acceso")
     private lazy var userTypeRow = BiomaListRow(icon: "person.text.rectangle", title: "Tipo de usuario", subtitle: viewModel.userType)
     private let rangeRow = BiomaListRow(icon: "clock", title: "Rango de tiempo para guardar detecciones recientes")
+    private let tokenRow = BiomaListRow(icon: "key", title: "Token de iNaturalist", subtitle: "Sin configurar")
     private let logoutRow = BiomaListRow(
         icon: "rectangle.portrait.and.arrow.right",
         title: "Cerrar sesión",
@@ -66,19 +67,23 @@ final class InformationViewController: BiomaViewController {
         let securityTitle = BiomaLabel("Seguridad", style: .sectionTitle)
         let securityGroup = BiomaRowGroup(rows: [passwordRow])
 
+        let iNaturalistTitle = BiomaLabel("Identificación de especies", style: .sectionTitle)
+        let iNaturalistGroup = BiomaRowGroup(rows: [tokenRow])
+
         let accountTitle = BiomaLabel("Cuenta", style: .sectionTitle)
         let accountGroup = BiomaRowGroup(rows: [userTypeRow, rangeRow, logoutRow])
 
         let versionRow = centered(BiomaPill("Bioma v1.0.0", fontSize: 13))
 
         [header, profileSummary, personalTitle, personalGroup, securityTitle, securityGroup,
-         accountTitle, accountGroup, versionRow].forEach {
+         iNaturalistTitle, iNaturalistGroup, accountTitle, accountGroup, versionRow].forEach {
             contentStack.addArrangedSubview($0)
         }
         contentStack.setCustomSpacing(24, after: header)
         contentStack.setCustomSpacing(28, after: profileSummary)
         contentStack.setCustomSpacing(26, after: personalGroup)
         contentStack.setCustomSpacing(26, after: securityGroup)
+        contentStack.setCustomSpacing(26, after: iNaturalistGroup)
         contentStack.setCustomSpacing(30, after: accountGroup)
     }
 
@@ -113,6 +118,7 @@ final class InformationViewController: BiomaViewController {
         passwordRow.addTarget(self, action: #selector(changePasswordTapped), for: .touchUpInside)
         userTypeRow.addTarget(self, action: #selector(userTypeTapped), for: .touchUpInside)
         rangeRow.addTarget(self, action: #selector(rangeTapped), for: .touchUpInside)
+        tokenRow.addTarget(self, action: #selector(tokenTapped), for: .touchUpInside)
         logoutRow.addTarget(self, action: #selector(logoutTapped), for: .touchUpInside)
     }
 
@@ -179,6 +185,56 @@ final class InformationViewController: BiomaViewController {
         present(sheet, animated: true)
     }
 
+    // MARK: - iNaturalist Token
+
+    /// Opciones del token: pegar uno nuevo, abrir la página donde se genera o eliminarlo.
+    @objc private func tokenTapped() {
+        let sheet = UIAlertController(
+            title: "Token de iNaturalist",
+            message: "Permite identificar especies con la Cámara. Caduca a las 24 horas.",
+            preferredStyle: .actionSheet
+        )
+
+        sheet.addAction(UIAlertAction(title: "Pegar token", style: .default) { [weak self] _ in
+            self?.showPasteTokenDialog()
+        })
+
+        if let url = viewModel.tokenPageURL {
+            sheet.addAction(UIAlertAction(title: "Obtener token en iNaturalist", style: .default) { _ in
+                // Se abre en Safari; ahí se inicia sesión y se copia el valor de «api_token».
+                UIApplication.shared.open(url)
+            })
+        }
+
+        if viewModel.hasStoredToken {
+            sheet.addAction(UIAlertAction(title: "Eliminar token", style: .destructive) { [weak self] _ in
+                self?.viewModel.deleteToken()
+                self?.showToast("Token eliminado")
+            })
+        }
+
+        sheet.addAction(UIAlertAction(title: "Cancelar", style: .cancel))
+
+        // En iPad, un actionSheet requiere un punto de anclaje.
+        sheet.popoverPresentationController?.sourceView = tokenRow
+        sheet.popoverPresentationController?.sourceRect = tokenRow.bounds
+        present(sheet, animated: true)
+    }
+
+    /// Campo para pegar el token copiado de la página de iNaturalist.
+    private func showPasteTokenDialog() {
+        showEditDialog(
+            title: "Pegar token",
+            message: "Inicia sesión en iNaturalist, abre la página del token y copia el valor de «api_token». También puedes pegar la respuesta completa.",
+            currentValue: "",
+            capitalization: UITextAutocapitalizationType.none
+        ) { [weak self] pastedText in
+            let error = self?.viewModel.saveToken(pastedText)
+            if error == nil { self?.showToast("Token guardado") }
+            return error
+        }
+    }
+
     @objc private func logoutTapped() {
         guard let sceneDelegate = view.window?.windowScene?.delegate as? SceneDelegate else {
             assertionFailure("No se encontró el SceneDelegate de la ventana actual")
@@ -192,23 +248,28 @@ final class InformationViewController: BiomaViewController {
     /// Muestra una alerta con un campo de texto, equivalente al AlertDialog de Android.
     /// - Parameters:
     ///   - title: Título de la alerta.
+    ///   - message: Instrucciones opcionales bajo el título.
     ///   - currentValue: Valor con el que inicia el campo.
     ///   - isSecure: `true` oculta el texto (contraseñas).
     ///   - keyboard: Tipo de teclado del campo.
+    ///   - capitalization: Uso de mayúsculas; si es `nil` se decide según el tipo de campo.
     ///   - onSave: Guarda el valor y devuelve un mensaje de error, o `nil` si tuvo éxito.
     private func showEditDialog(
         title: String,
+        message: String? = nil,
         currentValue: String,
         isSecure: Bool = false,
         keyboard: UIKeyboardType = .default,
+        capitalization: UITextAutocapitalizationType? = nil,
         onSave: @escaping (String) -> String?
     ) {
-        let alert = UIAlertController(title: title, message: nil, preferredStyle: .alert)
+        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
         alert.addTextField { field in
             field.text = currentValue
             field.isSecureTextEntry = isSecure
             field.keyboardType = keyboard
-            field.autocapitalizationType = isSecure || keyboard == .emailAddress ? .none : .words
+            let automatic: UITextAutocapitalizationType = isSecure || keyboard == .emailAddress ? .none : .words
+            field.autocapitalizationType = capitalization ?? automatic
             field.autocorrectionType = .no
         }
         alert.addAction(UIAlertAction(title: "Cancelar", style: .cancel))
@@ -248,6 +309,11 @@ final class InformationViewController: BiomaViewController {
         viewModel.$range
             .receive(on: RunLoop.main)
             .sink { [weak self] in self?.rangeRow.subtitle = $0.displayName }
+            .store(in: &cancellables)
+
+        viewModel.$tokenStatus
+            .receive(on: RunLoop.main)
+            .sink { [weak self] in self?.tokenRow.subtitle = $0.displayText }
             .store(in: &cancellables)
     }
 }

@@ -33,7 +33,7 @@ extension NetworkingError: LocalizedError {
         case .connectionLost:       return "Se perdió la conexión de red."
         case .noConnection:         return "No hay conexión a internet."
         case .httpResponseError:    return "El servicio respondió de forma inesperada."
-        case .unauthorized:         return "El token de iNaturalist no es válido o ya caducó."
+        case .unauthorized:         return "El token de iNaturalist no es válido o ya caducó. Pega uno nuevo en Perfil › Mi información."
         case .serverError:          return "El servicio no está disponible en este momento."
         case .decodingError:        return "No se pudo interpretar la respuesta del servicio."
         }

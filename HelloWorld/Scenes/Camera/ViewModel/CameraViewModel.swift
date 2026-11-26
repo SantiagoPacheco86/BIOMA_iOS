@@ -53,6 +53,12 @@ final class CameraViewModel {
             return "Inicia sesión para identificar especies."
         }
 
+        // Un token vencido se detecta sin llamar a la API: la foto ya quedó
+        // guardada como pendiente y se indica cómo renovarlo.
+        if ApiConfiguration.iNaturalistTokenStatus == .expired {
+            return "Detección pendiente: tu token de iNaturalist caducó. Pega uno nuevo en Perfil › Mi información."
+        }
+
         isIdentifying = true
         defer { isIdentifying = false }
 
