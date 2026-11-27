@@ -156,78 +156,74 @@ final class InicioViewController: BiomaViewController {
 // MARK: - InicioBannerView
 //
 // Banner «Descubre el mundo natural a tu alrededor» con la foto de la
-// mariposa, un degradado para que el texto sea legible y el botón
-// «Comenzar a explorar».
+// mariposa monarca y el botón «Comenzar a explorar», que abre Explorar.
+// Reproduce las medidas del banner de fragment_home.xml en Android:
+// 180 puntos de alto, esquinas de 16, márgenes internos de 20 y la foto
+// recortada al centro sin capas encima.
 private final class InicioBannerView: UIView {
 
-    /// Expuesto para que la pantalla defina la acción.
+    /// Botón expuesto para que la pantalla defina su acción.
     let exploreButton = BiomaButton("Comenzar a explorar →", style: .outlineLight)
-
-    private let gradient = CAGradientLayer()
 
     init() {
         super.init(frame: .zero)
         translatesAutoresizingMaskIntoConstraints = false
-        layer.cornerRadius = 20
+        layer.cornerRadius = BiomaTheme.Layout.cardCornerRadius
         layer.cornerCurve = .continuous
         clipsToBounds = true
-        backgroundColor = BiomaTheme.deepForest
+        // Verde de respaldo (#3B5240) visible mientras la imagen no se ha dibujado.
+        backgroundColor = UIColor(hex: 0x3B5240)
 
+        // Foto recortada al centro (equivalente a scaleType="centerCrop").
         let image = UIImageView(image: UIImage(named: "BiomaBanner"))
         image.contentMode = .scaleAspectFill
+        image.isAccessibilityElement = false
         image.translatesAutoresizingMaskIntoConstraints = false
         addSubview(image)
 
-        // Degradado oscuro de izquierda a derecha detrás del texto.
-        gradient.colors = [
-            UIColor.black.withAlphaComponent(0.55).cgColor,
-            UIColor.black.withAlphaComponent(0.05).cgColor
-        ]
-        gradient.startPoint = CGPoint(x: 0, y: 0.5)
-        gradient.endPoint = CGPoint(x: 1, y: 0.5)
-        layer.addSublayer(gradient)
-
-        let title = BiomaLabel("Descubre el mundo natural a tu alrededor", style: .headline)
-        title.font = BiomaTheme.font(size: 21, weight: .bold, relativeTo: .title3)
+        // Los saltos de línea replican la distribución del texto en Android.
+        let title = BiomaLabel("Descubre el mundo natural\na tu alrededor", style: .headline)
+        title.font = BiomaTheme.font(size: 18, weight: .bold, relativeTo: .headline)
         title.textColor = BiomaTheme.white
 
-        let message = BiomaLabel("Identifica plantas, animales y aprende más sobre la biodiversidad que te rodea.", style: .body)
-        message.textColor = BiomaTheme.white.withAlphaComponent(0.92)
+        let message = BiomaLabel("Identifica plantas, animales y aprende\nmás sobre la biodiversidad que te rodea.", style: .body)
+        message.font = BiomaTheme.font(size: 12, relativeTo: .footnote)
+        message.textColor = UIColor(hex: 0xD0DDD2)
 
-        // El botón conserva su ancho natural; el espacio sobrante queda a la derecha.
+        // El botón conserva su ancho natural y el espacio sobrante queda a la derecha.
         exploreButton.setContentHuggingPriority(.required, for: .horizontal)
         let buttonRow = UIStackView(arrangedSubviews: [exploreButton, UIView()])
         buttonRow.axis = .horizontal
 
         let texts = UIStackView(arrangedSubviews: [title, message, buttonRow])
         texts.axis = .vertical
-        texts.spacing = 10
-        texts.setCustomSpacing(18, after: message)
+        texts.spacing = 8
+        texts.setCustomSpacing(16, after: message)
         texts.translatesAutoresizingMaskIntoConstraints = false
         addSubview(texts)
 
+        // Altura de diseño de 180 puntos; con tamaños de texto grandes el banner
+        // crece lo necesario para que el contenido no se recorte.
+        let designHeight = heightAnchor.constraint(equalToConstant: 180)
+        designHeight.priority = .defaultHigh
+
         NSLayoutConstraint.activate([
-            heightAnchor.constraint(greaterThanOrEqualToConstant: 200),
+            designHeight,
 
             image.topAnchor.constraint(equalTo: topAnchor),
             image.bottomAnchor.constraint(equalTo: bottomAnchor),
             image.leadingAnchor.constraint(equalTo: leadingAnchor),
             image.trailingAnchor.constraint(equalTo: trailingAnchor),
 
-            texts.topAnchor.constraint(equalTo: topAnchor, constant: 24),
-            texts.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -24),
-            texts.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 24),
-            texts.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -60)
+            // El texto se alinea arriba con 20 puntos de margen, como en Android.
+            texts.topAnchor.constraint(equalTo: topAnchor, constant: 20),
+            texts.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
+            texts.trailingAnchor.constraint(lessThanOrEqualTo: trailingAnchor, constant: -20),
+            texts.bottomAnchor.constraint(lessThanOrEqualTo: bottomAnchor, constant: -20)
         ])
     }
 
     required init?(coder: NSCoder) { fatalError("Use init()") }
-
-    override func layoutSubviews() {
-        super.layoutSubviews()
-        // El degradado se ajusta al tamaño final del banner.
-        gradient.frame = bounds
-    }
 }
 
 // MARK: - DetectionCardView

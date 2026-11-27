@@ -7,12 +7,16 @@
 
 import UIKit
 
+// MARK: - SceneDelegate
+//
+// Administra la ventana de la aplicación y decide qué pantalla es la raíz:
+// Splash al arrancar, Login sin sesión y Home con sesión iniciada.
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
+    /// Ventana principal; SceneDelegate la conserva mientras la escena existe.
     var window: UIWindow?
 
-
-
+    /// iOS llama a este método al conectar la escena: es el inicio visual de la app.
     func scene(
         _ scene: UIScene,
         willConnectTo session: UISceneSession,
@@ -21,17 +25,17 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
         // MARK: - 1. VALIDAR ESCENA
 
-        // Verificamos que la escena sea una ventana de iOS.
+        // La escena debe ser una ventana de iOS (UIWindowScene).
         guard let windowScene = scene as? UIWindowScene else {
             return
         }
 
         // MARK: - 2. CREAR VENTANA
 
-        // Creamos la ventana principal asociada a la escena.
+        // Ventana principal asociada a la escena.
         let window = UIWindow(windowScene: windowScene)
 
-        // Conservamos la ventana en SceneDelegate.
+        // SceneDelegate conserva la ventana para que no se libere.
         self.window = window
 
         // MARK: - 3. DEFINIR PANTALLA INICIAL
@@ -41,7 +45,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
         // MARK: - 4. MOSTRAR PANTALLA
 
-        // Hacemos visible la interfaz.
+        // La ventana se convierte en la principal y se hace visible.
         window.makeKeyAndVisible()
     }
 
@@ -52,7 +56,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     //   • Autenticación: Splash → UINavigationController → Main ⇄ Register
     //   • Sesión iniciada: HomeViewController (pestañas Inicio, Cámara y Perfil)
     //
-    // En lugar de hacer push de Home sobre el Login, reemplazamos la
+    // En lugar de hacer push de Home sobre el Login, se reemplaza la
     // pantalla raíz de la ventana. Así el Login se libera de memoria y el
     // botón Atrás (o el gesto de deslizar) no puede regresar a él.
 
@@ -104,34 +108,25 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     }
 
 
-    func sceneDidDisconnect(_ scene: UIScene) {
-        // Called as the scene is being released by the system.
-        // This occurs shortly after the scene enters the background, or when its session is discarded.
-        // Release any resources associated with this scene that can be re-created the next time the scene connects.
-        // The scene may re-connect later, as its session was not necessarily discarded (see `application:didDiscardSceneSessions` instead).
-    }
+    // MARK: - Ciclo de vida de la escena
+    //
+    // iOS llama a estos métodos cuando la escena cambia de estado. BIOMA guarda
+    // sus datos en el momento en que se modifican (UserDefaults, Keychain y
+    // archivos), por lo que no necesita trabajo adicional en ninguna transición.
 
-    func sceneDidBecomeActive(_ scene: UIScene) {
-        // Called when the scene has moved from an inactive state to an active state.
-        // Use this method to restart any tasks that were paused (or not yet started) when the scene was inactive.
-    }
+    /// La escena se libera; puede volver a conectarse más tarde.
+    func sceneDidDisconnect(_ scene: UIScene) {}
 
-    func sceneWillResignActive(_ scene: UIScene) {
-        // Called when the scene will move from an active state to an inactive state.
-        // This may occur due to temporary interruptions (ex. an incoming phone call).
-    }
+    /// La escena pasa a primer plano y recibe interacción.
+    func sceneDidBecomeActive(_ scene: UIScene) {}
 
-    func sceneWillEnterForeground(_ scene: UIScene) {
-        // Called as the scene transitions from the background to the foreground.
-        // Use this method to undo the changes made on entering the background.
-    }
+    /// La escena deja de estar activa, por ejemplo durante una llamada entrante.
+    func sceneWillResignActive(_ scene: UIScene) {}
 
-    func sceneDidEnterBackground(_ scene: UIScene) {
-        // Called as the scene transitions from the foreground to the background.
-        // Use this method to save data, release shared resources, and store enough scene-specific state information
-        // to restore the scene back to its current state.
-    }
+    /// La escena regresa del segundo plano.
+    func sceneWillEnterForeground(_ scene: UIScene) {}
 
-
+    /// La escena pasa al segundo plano.
+    func sceneDidEnterBackground(_ scene: UIScene) {}
 }
 

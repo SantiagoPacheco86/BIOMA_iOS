@@ -11,7 +11,8 @@ import Testing
 struct HelloWorldTests {
 
     @Test func example() async throws {
-        // Write your test here and use APIs like `#expect(...)` to check expected conditions.
+        // Prueba de ejemplo generada por Xcode. Las pruebas unitarias del proyecto
+        // usan el framework Testing, que verifica condiciones con `#expect(...)`.
     }
 
 }

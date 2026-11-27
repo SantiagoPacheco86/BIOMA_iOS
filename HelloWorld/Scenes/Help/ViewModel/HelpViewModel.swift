@@ -21,9 +21,8 @@ final class HelpViewModel {
 
     // MARK: - Content
 
-    /// Video tutorial. Mismo video provisional que en el proyecto Android;
-    /// se reemplazará por el tutorial real de BIOMA.
-    let videoURL = URL(string: "https://assets.testfiles.dev/video/sample-3s.mp4")
+    /// Video tutorial oficial de BIOMA, alojado en Google Cloud Storage.
+    let videoURL = URL(string: "https://storage.googleapis.com/bioma-help-helpactivity/HelpActivity_BIOMA.mp4")
 
     let videoTitle = "Cómo identificar especies\ncon Bioma"
     let videoDuration = "2:36"

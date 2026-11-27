@@ -7,4 +7,8 @@
 
 import Foundation
 
+// MARK: - ParameterType
+//
+// Alias para el diccionario de parámetros de una petición. Los valores son de
+// tipo `Any` porque una misma petición combina textos, números y booleanos.
 typealias ParameterType = [String: Any]

@@ -23,12 +23,13 @@ enum ApiConfiguration {
 
     // MARK: - ⚠️ TOKEN PARA PRUEBAS
 
-    /// ⚠️ TEMPORAL: pega tu token de iNaturalist entre las comillas,
-    /// reemplazando PEGA_AQUI_TU_TOKEN. Puede ser solo el valor (eyJ…) o la
-    /// respuesta completa de la página: {"api_token":"eyJ…"}.
+    /// ⚠️ TEMPORAL: token de iNaturalist escrito directamente en el código para
+    /// probar la identificación en el simulador. El texto PEGA_AQUI_TU_TOKEN
+    /// indica que no hay token; en ese caso se usan las demás fuentes.
     ///
-    /// No hagas commit de este archivo con tu token: el repositorio es público.
-    /// Al terminar las pruebas, vuelve a dejar "PEGA_AQUI_TU_TOKEN".
+    /// Admite el valor del token (eyJ…) o la respuesta completa de la página
+    /// {"api_token":"eyJ…"}. El repositorio es público, por lo que la versión
+    /// publicada de este archivo conserva siempre el texto PEGA_AQUI_TU_TOKEN.
     private static let tokenForTesting = "PEGA_AQUI_TU_TOKEN"
 
     // MARK: - Public API

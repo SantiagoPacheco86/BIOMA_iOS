@@ -166,7 +166,7 @@ final class BiomaButton: UIButton {
 
         case .outlineLight:
             backgroundColor = .clear
-            layer.borderWidth = 1.5
+            layer.borderWidth = 1
             layer.borderColor = BiomaTheme.white.cgColor
             heightAnchor.constraint(greaterThanOrEqualToConstant: 40).isActive = true
         }
@@ -184,7 +184,7 @@ final class BiomaButton: UIButton {
         case .outline:
             return (BiomaTheme.font(size: 16, weight: .semibold, relativeTo: .headline), BiomaTheme.deepForest)
         case .outlineLight:
-            return (BiomaTheme.font(size: 14, weight: .semibold, relativeTo: .subheadline), BiomaTheme.white)
+            return (BiomaTheme.font(size: 13, weight: .medium, relativeTo: .footnote), BiomaTheme.white)
         }
     }
 

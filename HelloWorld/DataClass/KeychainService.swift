@@ -7,52 +7,52 @@
 
 import Foundation
 
-//MARK: - KeychainService
-
+// MARK: - KeychainService
+//
 // Guarda, lee y borra contraseñas en el Keychain de iOS.
-// A diferencia de UserDefaults, el Keychain esta cifrado por el sistema,
-// por eso es el lugar correcto para credenciales.
+// A diferencia de UserDefaults, el Keychain está cifrado por el sistema,
+// por eso es el lugar adecuado para credenciales y tokens.
 
 struct KeychainService {
-    //MARK: - Properties
+    // MARK: - Properties
     
-    // Agrupa todas las contraseñas de BIOMA dentro del KeyChain
+    /// Servicio que agrupa todas las credenciales de BIOMA dentro del Keychain.
     private let service = "com.bioma.credentials"
     
     // MARK: - Public API
     
-    // Guarda (o reemplaza) la contraseña de una cuenta.
-    // - Retruns: "true" si se guardo correctamente.
+    /// Guarda (o reemplaza) la contraseña de una cuenta.
+    /// - Returns: `true` si se guardó correctamente.
     @discardableResult
     func savePassword(_ password: String, for account: String) -> Bool {
-        // 1. Si ya existia una contraseña para esta cuenta, la borramosn
-        // para evitar el error "elemento duplicado"
+        // 1. Una contraseña previa de la misma cuenta se elimina primero,
+        //    porque el Keychain rechaza elementos duplicados.
         deletePassword(for: account)
         
-        // 2. Partimos de la consulta base y agregamos el dato a guardar.
+        // 2. La consulta base se completa con el dato que se va a guardar.
         var query = baseQuery(for: account)
         query[kSecValueData as String] = Data(password.utf8)
         // Solo legible con el dispositivo desbloqueado y no se copia a otros equipos.
         query[kSecAttrAccessible as String] = kSecAttrAccessibleWhenUnlocked
         
-        // 3. Pedimos al sistema que lo guarde.
+        // 3. El sistema guarda el elemento y devuelve un código de estado.
         let status = SecItemAdd(query as CFDictionary, nil)
         
         if status != errSecSuccess {
-            print("⚠️ Keychain: no se pudo guardar (OSSStatus \(status))")
+            print("⚠️ Keychain: no se pudo guardar (OSStatus \(status))")
         }
         return status == errSecSuccess
     }
     
     /// Lee la contraseña de una cuenta.
-    /// - Returns: la contraseña o "nil" si no existe.
+    /// - Returns: La contraseña, o `nil` si no existe.
     func readPassword(for account: String) -> String? {
         var query = baseQuery(for: account)
+        // La consulta solicita el contenido (los bytes) de un único elemento.
         query[kSecReturnData as String] = true
-        // Queremos el contenido...
-        query[kSecMatchLimit as String] = kSecMatchLimitOne // ... de un solo elemento
+        query[kSecMatchLimit as String] = kSecMatchLimitOne
         
-        // SecItemCopyMatching escribe el resultado en "result".
+        // SecItemCopyMatching escribe el elemento encontrado en `result`.
         var result: AnyObject?
         let status = SecItemCopyMatching(query as CFDictionary, &result)
         
@@ -62,8 +62,8 @@ struct KeychainService {
         return String(data: data, encoding: .utf8)
     }
     
-    /// Borrar la contraseña de una cuenta.
-    /// - Returns: "true" si se borro o si no existia
+    /// Borra la contraseña de una cuenta.
+    /// - Returns: `true` si se borró o si no existía.
     @discardableResult
     func deletePassword(for account: String) -> Bool {
         let status = SecItemDelete(baseQuery(for: account) as CFDictionary)
@@ -72,7 +72,7 @@ struct KeychainService {
     
     // MARK: - Helpers
     
-    /// Consulta que identifica una contraseña: tipo + servicio + cuenta
+    /// Consulta que identifica una contraseña: tipo + servicio + cuenta.
     private func baseQuery(for account: String) -> [String: Any] {
         [
             kSecClass as String:

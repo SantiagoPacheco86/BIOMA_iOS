@@ -7,6 +7,10 @@
 
 import Foundation
 
+// MARK: - HTTPMethod
+//
+// Verbos HTTP admitidos. El valor de texto (rawValue) es el que se asigna a
+// `URLRequest.httpMethod`.
 enum HTTPMethod: String {
     case get = "GET"
     case head = "HEAD"
