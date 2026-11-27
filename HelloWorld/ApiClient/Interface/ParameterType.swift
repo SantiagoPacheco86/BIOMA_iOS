@@ -4,6 +4,8 @@
 //
 //  Created by José De Jesús Vega López on 01/11/24.
 //
+//  Estructura, organización y contenido asistidos por IA.
+//
 
 import Foundation
 

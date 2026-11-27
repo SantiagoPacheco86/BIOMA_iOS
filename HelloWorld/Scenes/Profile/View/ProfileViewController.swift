@@ -4,6 +4,8 @@
 //
 //  Created by Santiago Pacheco Temp on 26/10/26.
 //
+//  Estructura, organización y contenido asistidos por IA.
+//
 
 import UIKit
 import Combine

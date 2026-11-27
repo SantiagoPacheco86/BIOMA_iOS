@@ -4,6 +4,8 @@
 //
 //  Created by Santiago Pacheco Temp on 11/11/26.
 //
+//  Estructura, organización y contenido asistidos por IA.
+//
 
 import Foundation
 

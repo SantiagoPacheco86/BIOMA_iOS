@@ -2,6 +2,8 @@
 //  BiomaSpeciesRow.swift
 //  HelloWorld
 //
+//  Estructura, organización y contenido asistidos por IA.
+//
 
 import UIKit
 

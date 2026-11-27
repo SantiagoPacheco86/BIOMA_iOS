@@ -4,6 +4,8 @@
 //
 //  Created by Alumnos on 16/10/26.
 //
+//  Estructura, organización y contenido asistidos por IA.
+//
 
 import Testing
 @testable import HelloWorld

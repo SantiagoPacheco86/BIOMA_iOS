@@ -1,3 +1,10 @@
+//
+//  BiomaTheme.swift
+//  HelloWorld
+//
+//  Estructura, organización y contenido asistidos por IA.
+//
+
 import UIKit
 
 // MARK: - BiomaTheme
@@ -51,7 +58,7 @@ enum BiomaTheme {
 
     // MARK: - Layout
 
-    /// Medidas de referencia del documento de contexto (sección 4.2).
+    /// Medidas compartidas por los componentes y las pantallas.
     enum Layout {
         static let fieldHeight: CGFloat = 56
         static let buttonHeight: CGFloat = 54

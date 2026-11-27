@@ -4,6 +4,8 @@
 //
 //  Created by Alumnos on 21/10/26.
 //
+//  Estructura, organización y contenido asistidos por IA.
+//
 
 import UIKit
 
