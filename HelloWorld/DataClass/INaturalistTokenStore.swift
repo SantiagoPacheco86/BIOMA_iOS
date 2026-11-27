@@ -9,7 +9,7 @@ import Foundation
 //
 // Estado del token de iNaturalist que usa la identificación por foto.
 enum INaturalistTokenStatus: Equatable {
-    /// No hay token guardado en la app ni en Secrets.plist.
+    /// El usuario no ha guardado ningún token en la app.
     case missing
     /// Hay un token vigente; incluye su fecha de vencimiento si se pudo leer.
     case active(expiresAt: Date?)

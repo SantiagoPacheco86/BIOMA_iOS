@@ -8,5 +8,6 @@ DerivedData/
 build/
 *.xcuserstate
 
-# Configuración privada de la API (token de iNaturalist). Ver Secrets.example.plist
+# Archivo de configuración privada que usaban versiones anteriores para el token
+# de iNaturalist. Se mantiene ignorado para que nunca se publique por error.
 HelloWorld/Secrets.plist

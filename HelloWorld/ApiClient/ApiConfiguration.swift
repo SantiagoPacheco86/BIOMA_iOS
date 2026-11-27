@@ -8,66 +8,25 @@ import Foundation
 // MARK: - ApiConfiguration
 //
 // Origen del token (JWT) de iNaturalist que exige la identificación por foto.
-// Se consulta en este orden:
 //
-//   0. Token escrito directamente en este archivo (`tokenForTesting`).
-//      TEMPORAL: solo para probar la API en el simulador.
-//   1. Token pegado en la app (Mi información → Token de iNaturalist),
-//      guardado en el Keychain. Es la opción para un iPhone real.
-//   2. `Secrets.plist`, opción de desarrollo que no se sube al repositorio.
+// El token lo proporciona el propio usuario: lo obtiene con su cuenta en
+// https://www.inaturalist.org/users/api_token y lo pega en
+// Perfil › Mi información › Token de iNaturalist. La app lo guarda cifrado en
+// el Keychain mediante INaturalistTokenStore.
 //
-// El token se obtiene en https://www.inaturalist.org/users/api_token y
-// caduca a las 24 horas. Sin token, la Cámara guarda las fotos como
-// «Especie no identificada».
+// El token caduca a las 24 horas. Sin un token vigente, la Cámara guarda las
+// fotos como «Especie no identificada» y la búsqueda de Explorar, que es
+// pública, sigue funcionando.
 enum ApiConfiguration {
 
-    // MARK: - ⚠️ TOKEN PARA PRUEBAS
-
-    /// ⚠️ TEMPORAL: token de iNaturalist escrito directamente en el código para
-    /// probar la identificación en el simulador. El texto PEGA_AQUI_TU_TOKEN
-    /// indica que no hay token; en ese caso se usan las demás fuentes.
-    ///
-    /// Admite el valor del token (eyJ…) o la respuesta completa de la página
-    /// {"api_token":"eyJ…"}. El repositorio es público, por lo que la versión
-    /// publicada de este archivo conserva siempre el texto PEGA_AQUI_TU_TOKEN.
-    private static let tokenForTesting = "PEGA_AQUI_TU_TOKEN"
-
-    // MARK: - Public API
-
-    /// Token vigente a usar en las peticiones, o `nil` si no hay ninguno.
-    /// Se lee cada vez, para reflejar un token recién pegado en la app.
+    /// Token guardado por el usuario, o `nil` si no ha pegado ninguno.
+    /// Se lee en cada consulta, para reflejar un token recién guardado.
     static var iNaturalistToken: String? {
-        testingToken ?? INaturalistTokenStore().storedToken ?? bundledToken
+        INaturalistTokenStore().storedToken
     }
 
     /// Estado del token actual: vigente, caducado o inexistente.
     static var iNaturalistTokenStatus: INaturalistTokenStatus {
         INaturalistTokenStore.status(of: iNaturalistToken)
     }
-
-    // MARK: - Sources
-
-    /// Token escrito en `tokenForTesting`, o `nil` si sigue el texto de ejemplo.
-    private static var testingToken: String? {
-        let text = tokenForTesting.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty, text != "PEGA_AQUI_TU_TOKEN" else { return nil }
-
-        // Toma solo el JWT (tres partes separadas por puntos), por si se pegó
-        // la respuesta completa con {"api_token": …}.
-        let pattern = "[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+"
-        guard let range = text.range(of: pattern, options: .regularExpression) else { return nil }
-        return String(text[range])
-    }
-
-    /// Token de `Secrets.plist`, leído una sola vez al primer uso.
-    private static let bundledToken: String? = {
-        guard let url = Bundle.main.url(forResource: "Secrets", withExtension: "plist"),
-              let data = try? Data(contentsOf: url),
-              let plist = try? PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any],
-              let token = plist["INaturalistAPIToken"] as? String else {
-            return nil
-        }
-        let trimmed = token.trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmed.isEmpty ? nil : trimmed
-    }()
 }
